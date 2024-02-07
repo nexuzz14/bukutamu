@@ -1,56 +1,38 @@
-var qrcode = window.qrcode;
+const video = document.getElementById('video');
+const canvasElement = document.getElementById('photo-canvas');
+const btnCapture = document.getElementById('btn-capture');
 
-const video = document.createElement("video");
-const canvasElement = document.getElementById("qr-canvas");
-const canvas = canvasElement.getContext("2d");
+let stream;
 
-const qrResult = document.getElementById("qr-result");
-const outputData = document.getElementById("outputData");
-const btnScanQR = document.getElementById("btn-scan-qr");
-
-let scanning = false;
-
-qrcode.callback = res => {
-  if (res) {
-    outputData.innerText = res;
-    scanning = false;
-
-    video.srcObject.getTracks().forEach(track => {
-      track.stop();
+navigator.mediaDevices.getUserMedia({ video: true })
+    .then(function (mediaStream) {
+        stream = mediaStream;
+        video.srcObject = mediaStream;
+        video.play();
+        video.addEventListener('loadedmetadata', function () {
+            // Video telah dimuat sepenuhnya, tombol Ambil Foto dapat diaktifkan
+            btnCapture.disabled = false;
+        });
+    })
+    .catch(function (error) {
+        console.error('Error accessing camera: ', error);
     });
 
-    qrResult.hidden = false;
-    canvasElement.hidden = true;
-    btnScanQR.hidden = false;
-  }
-};
-
-btnScanQR.onclick = () => {
-  navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
-      scanning = true;
-      qrResult.hidden = true;
-      btnScanQR.hidden = true;
-      canvasElement.hidden = false;
-      video.setAttribute("playsinline", true); // required to tell iOS safari we don't want fullscreen
-      video.srcObject = stream;
-      video.play();
-      tick();
-      scan();
+document.addEventListener('DOMContentLoaded', function () {
+    btnCapture.addEventListener('click', function () {
+        capturePhoto();
     });
-};
+});
 
-function tick() {
-  canvasElement.height = video.videoHeight;
-  canvasElement.width = video.videoWidth;
-  canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+function capturePhoto() {
+    console.log('Button Clicked');
+    const context = canvasElement.getContext('2d'); // Gunakan canvasElement di sini bukan variabel baru "canvas"
+    context.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
 
-  scanning && requestAnimationFrame(tick);
-}
-
-function scan() {
-  try {
-    qrcode.decode();
-  } catch (e) {
-    setTimeout(scan, 300);
-  }
+    if (stream) {
+        const tracks = stream.getTracks();
+        tracks.forEach(track => track.stop());
+    }
+    
+    // Opsional, Anda dapat menyimpan atau memanipulasi foto yang diambil di sini.
 }
